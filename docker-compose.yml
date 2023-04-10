@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  rabbitmqServer:
+    container_name: rabbitmqServer
+    image: "rabbitmq:3.11.13-management-alpine"
+    hostname: "rabbitmq-host"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+
+  producer:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    command: ["wait-for-it", "--service", "rabbitmqServer:5672","-t","10", "--", "python", "-m", "app"]
+    container_name: producer
+    restart: on-failure
+    depends_on:
+      - rabbitmqServer
+      - receiver
+
+  receiver:
+    container_name: receiver
+    build:
+      context: ./receiver
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - rabbitmqServer
